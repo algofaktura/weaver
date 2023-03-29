@@ -160,7 +160,7 @@ pub mod info {
             .expect("Something's wrong, the same verts are being compared.")
     }
 
-    pub fn absumv2d((x, y, _): Vert) -> i16 {
+    pub fn absumv2dx((x, y, _): Vert) -> i16 {
         let abs_sum = [x, y].iter().fold(0, |acc, x| {
             let mask = x >> 15;
             acc + (x ^ mask) - mask
@@ -169,31 +169,55 @@ pub mod info {
         (abs_sum ^ sign_bit) - sign_bit
     }
 
-    pub fn absumv3d((x, y, z): Vert) -> i16 {
-        let abs_sum = [x, y, z].iter().fold(0, |acc, x| {
-            let mask = x >> 15;
-            acc + (x ^ mask) - mask
-        });
-        let sign_bit = abs_sum >> 15;
-        (abs_sum ^ sign_bit) - sign_bit
+    pub fn absumv2d((x, y, _): Vert) -> i16 {
+        [x, y]
+            .iter()
+            .map(|v| {
+                let mask = v >> 15;
+                (v ^ mask) - mask
+            })
+            .sum()
     }
 
-    pub fn absumv2dc(vert: [i16; 2]) -> i16 {
-        let abs_sum = vert.iter().fold(0, |acc, x| {
+    pub fn absumv3d((x, y, z): Vert) -> i16 {
+        [x, y, z]
+            .iter()
+            .map(|v| {
+                let mask = v >> 15;
+                (v ^ mask) - mask
+            })
+            .sum()
+    }
+
+    pub fn absumv2dc([x, y]: [i16; 2]) -> i16 {
+        ((x ^ (x >> 15)) - (x >> 15)) + ((y ^ (y >> 15)) - (y >> 15))
+    }
+
+    /// mask = v >> 15, r = (v ^ mask) - mask;
+    pub fn absumv2dc2(vert: [i16; 2]) -> i16 {
+        vert.iter()
+            .map(|v| {
+                let mask = v >> 15;
+                (v ^ mask) - mask
+            })
+            .sum()
+    }
+
+    /// mask = v >> 15, r = (v ^ mask) - mask;
+    pub fn absumv2dc6(vert: [i16; 2]) -> i16 {
+        vert.iter().fold(0, |acc, x| {
             let mask = x >> 15;
             acc + (x ^ mask) - mask
-        });
-        let sign_bit = abs_sum >> 15;
-        (abs_sum ^ sign_bit) - sign_bit
+        })
     }
 
     pub fn absumv(vert: [i16; 3]) -> Point {
-        let abs_sum = vert.iter().fold(0, |acc, x| {
-            let mask = x >> 15;
-            acc + (x ^ mask) - mask
-        });
-        let sign_bit = abs_sum >> 15;
-        (abs_sum ^ sign_bit) - sign_bit
+        vert.iter()
+            .map(|v| {
+                let mask = v >> 15;
+                (v ^ mask) - mask
+            })
+            .sum()
     }
 
     pub fn get_max_xyz(order: u32) -> SignedIdx {
@@ -334,7 +358,7 @@ pub mod make_edges_eadjs {
 pub mod certify {
     use itertools::all;
 
-    use super::{std::fmt, Adjacency, Itertools, Solution, info::absumv};
+    use super::{info::absumv, std::fmt, Adjacency, Itertools, Solution};
 
     #[derive(Debug, PartialEq)]
     pub enum SequenceID {
@@ -368,11 +392,16 @@ pub mod certify {
     }
 
     pub fn is_hamiltonian_circuit(seq: &Solution, order: usize, max_xyz_plus_4: i16) -> SequenceID {
-        if seq.iter().duplicates().count() > 0 
-            || seq.len() != order 
+        if seq.iter().duplicates().count() > 0
+            || seq.len() != order
             || !all(seq.iter(), |[x, y, z]| (x & 1) + (y & 1) + (z & 1) == 3)
             || !all(seq.iter(), |vert| absumv(*vert) < max_xyz_plus_4)
-            || seq.iter().fold((0, 0, 0), |acc: (i16, i16, i16), &[x, y, z]| (acc.0 + x, acc.1 + y, acc.2 + z)) != (0, 0, 0)
+            || seq
+                .iter()
+                .fold((0, 0, 0), |acc: (i16, i16, i16), &[x, y, z]| {
+                    (acc.0 + x, acc.1 + y, acc.2 + z)
+                })
+                != (0, 0, 0)
         {
             return SequenceID::Broken;
         }
@@ -381,22 +410,28 @@ pub mod certify {
 }
 
 pub mod csv_out {
-    use std::error::Error;
     use serde::Serialize;
-    
+    use std::error::Error;
+
     #[derive(Debug, Serialize, serde::Deserialize)]
     #[serde(rename_all = "PascalCase")]
     struct Vector {
         x: i16,
         y: i16,
-        z: i16
+        z: i16,
     }
 
-    pub fn vector_to_csv(data: Vec<[i16;3]>, file_path: &str) -> Result<(), Box<dyn Error>> {
+    pub fn vector_to_csv(data: Vec<[i16; 3]>, file_path: &str) -> Result<(), Box<dyn Error>> {
         let file = std::fs::File::create(&file_path)?;
         let mut writer = csv::Writer::from_writer(file);
         data.iter().for_each(|[x, y, z]| {
-            writer.serialize(Vector{x:*x, y:*y, z:*z}).ok();
+            writer
+                .serialize(Vector {
+                    x: *x,
+                    y: *y,
+                    z: *z,
+                })
+                .ok();
         });
         writer.flush()?;
         Ok(())

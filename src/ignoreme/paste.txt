@@ -1,0 +1,45 @@
+pub mod new_spin {
+    // use std::collections::HashMap;
+    // use maplit::hashmap;
+    
+    
+    // pub fn spin_and_color_yarn(order_z: usize, min_xyz: i16) -> Spool {
+    //     let mut spindle = spin(order_z, min_xyz + 4);
+    //     let blue: Yarn = Yarn::from(spindle.drain(..).collect::<Vec<_>>());
+    //     let red: Yarn = blue.dot(&arr2(&[[-1, 0], [0, -1]])) + arr2(&[[0, 2]]);
+    //     Spool::from([(3, blue), (1, red)])
+    // }
+
+    // pub fn spin(order_z: usize, max_xyz: i16) -> Vec<[i16; 2]> {
+    //     let max_absumv: i16 = max_xyz + 1;
+    //     let mut visited: HashMap<[i16; 2], bool> = HashMap::with_capacity(order_z);
+    //     let disp_vectors: Vec<HashMap<i8, [i16; 2]>> = vec![
+    //         hashmap! {0 => [-2, 0], 1 => [0, -2]},
+    //         hashmap! {0 => [-2, 0], 1 => [0, 2]},
+    //         hashmap! {0 => [2, 0], 1 => [0, 2]},
+    //         hashmap! {0 => [2, 0], 1 => [0, -2]},
+    //     ];
+    //     let mut disp_cycler = disp_vectors.iter().cycle();
+    //     let yx: [i8; 2] = [1, 0];
+    //     let mut yx_switch = yx.iter().cycle();
+    //     let mut spindle: Vec<[i16; 2]> = Vec::with_capacity(order_z);
+    //     let start = [max_xyz, 1];
+    //     spindle.extend([start]);
+    //     visited.insert(start, true);
+    //     let mut curr_disp = disp_cycler.next().unwrap();
+    //     (0..order_z - 1).for_each(|i| {
+    //         let yorx = yx_switch.next().unwrap();
+    //         let [x, y] = spindle[i];
+    //         let [a, b] = curr_disp[yorx];
+    //         let mut new_vect = [x + a, y + b];
+    //         if visited.get(&new_vect) != None || absumv2dc(new_vect) > max_absumv {
+    //             curr_disp = disp_cycler.next().unwrap();
+    //             let [a, b] = curr_disp[yorx];
+    //             new_vect = [x + a, y + b];
+    //         }
+    //         spindle.extend([new_vect]);
+    //         visited.insert(new_vect, true);
+    //     });
+    //     spindle
+// }
+}
