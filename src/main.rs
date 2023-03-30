@@ -16,7 +16,6 @@
 /// 1 (start with order 8 end at order 1,373,600) 100 in steps of two: [1, 3, 5, 7...]
 /////////////////////////////////////////////////////////////////////////////
 extern crate chrono;
-extern crate chrono;
 extern crate rayon;
 
 pub mod graph;

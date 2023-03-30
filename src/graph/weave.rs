@@ -1,8 +1,6 @@
 use itertools::Itertools;
 use ndarray::{arr2, array, s, Array2, Axis, Slice};
-use ndarray::{arr2, array, s, Array2, Axis, Slice};
 use rayon::prelude::*;
-use std::{collections::HashMap, iter::once};
 use std::{collections::HashMap, iter::once};
 
 use super::{
@@ -57,9 +55,6 @@ pub fn weave(n: usize, z_adj: ZAdjacency, z_order: ZOrder, min_xyz: Point, order
 fn wrap_and_reflect_loom(n: usize, _z_adj: ZAdjacency, z_order: ZOrder) -> Loom {
     // let spool: Spool = spin_and_color_yarn(_z_adj);
     let spool: Spool = spin_and_color_yarn_n(n, (n * 2 - 1) as i16, _z_adj.len()); // <- better version without visited or adjacency.
-fn wrap_and_reflect_loom(n: usize, _z_adj: ZAdjacency, z_order: ZOrder) -> Loom {
-    // let spool: Spool = spin_and_color_yarn(_z_adj);
-    let spool: Spool = spin_and_color_yarn_n(n, (n * 2 - 1) as i16, _z_adj.len()); // <- better version without visited or adjacency.
     let mut bobbins: Bobbins = Bobbins::with_capacity(n);
     let mut loom: Loom = Loom::with_capacity((n / 2) + 1);
     for (z, length) in z_order {
@@ -75,14 +70,12 @@ fn wrap_and_reflect_loom(n: usize, _z_adj: ZAdjacency, z_order: ZOrder) -> Loom 
                 .iter()
                 .rev()
                 .map(|&[x, y, z]| [x, y, -z])
-                .map(|&[x, y, z]| [x, y, -z])
                 .collect::<Tour>(),
         )
     });
     loom
 }
 
-pub fn spin_and_color_yarn(z_adj: ZAdjacency) -> Spool {
 pub fn spin_and_color_yarn(z_adj: ZAdjacency) -> Spool {
     let order_z = z_adj.len();
     let spindle: &mut Spindle = &mut Spindle::with_capacity(order_z);
@@ -240,15 +233,6 @@ fn cut_yarn(yarn: Tour, cuts: &Tour) -> Warps {
                     });
                 }
             }
-        } else if let Some(first_slice) = yarn.get(prev as usize + 1..=idx) {
-            if !first_slice.is_empty() {
-                subtours.push(if cuts.contains(&first_slice[0]) {
-                    first_slice.to_vec()
-                } else {
-                    first_slice.iter().rev().cloned().collect()
-                });
-            }
-        }
         } else if let Some(first_slice) = yarn.get(prev as usize + 1..=idx) {
             if !first_slice.is_empty() {
                 subtours.push(if cuts.contains(&first_slice[0]) {
