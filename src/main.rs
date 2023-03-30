@@ -3,6 +3,8 @@
 /// ```
 /// cargo run --release [N] [N_UPPER_INCLUSIVE] [STEPS]
 /// cargo run --release 1 100 2
+/// cargo run --release [N] [N_UPPER_INCLUSIVE] [STEPS]
+/// cargo run --release 1 100 2
 /// ```
 /// builds binary under hamcycle/target/release/hamcycle
 /// runs binary: ./hamcycle/target/release/hamcycle
@@ -11,7 +13,9 @@
 /// continues to the next orders up to the 100th which is an order with 1,373,600 vertices,
 /// makes graph, solves it
 /// 1 (start with order 8 end at order 1,373,600) 100 in steps of two: [1, 3, 5, 7...]
+/// 1 (start with order 8 end at order 1,373,600) 100 in steps of two: [1, 3, 5, 7...]
 /////////////////////////////////////////////////////////////////////////////
+extern crate chrono;
 extern crate chrono;
 extern crate rayon;
 
@@ -27,6 +31,18 @@ use std::{env, time::Instant};
 
 pub fn main() -> Result<(), &'static str> {
     let args: Vec<String> = env::args().collect();
+    let n_start = args
+        .get(1)
+        .and_then(|arg| arg.parse().ok())
+        .filter(|&parsed| parsed > 0)
+        .unwrap_or(100);
+    let n_end = args
+        .get(2)
+        .and_then(|arg| arg.parse().ok())
+        .filter(|&parsed| parsed >= n_start)
+        .unwrap_or(n_start);
+    let steps = args.get(3).and_then(|arg| arg.parse().ok()).unwrap_or(1);
+    for level in (n_start..=n_end).step_by(steps) {
     let n_start = args
         .get(1)
         .and_then(|arg| arg.parse().ok())
@@ -56,7 +72,15 @@ pub fn find_solution(level: u32, _certify: bool) -> Result<Solution, &'static st
         "| 🇳 {n:>4} | 🕗 MAKE: {} | ⭕️ {order:>10} | 🕗 SOLVE: {} | 📌 HamCycle",
         dur_make.as_secs_f32(),
         dur_solve.as_secs_f32(),
+        "| 🇳 {n:>4} | 🕗 MAKE: {} | ⭕️ {order:>10} | 🕗 SOLVE: {} | 📌 HamCycle",
+        dur_make.as_secs_f32(),
+        dur_solve.as_secs_f32(),
     );
+
+    start = Instant::now();
+    let seq_id = is_hamiltonian_circuit(&solution, order as usize, min_xyz + 8);
+    let dur_certify = Instant::now() - start;
+    println!(
 
     start = Instant::now();
     let seq_id = is_hamiltonian_circuit(&solution, order as usize, min_xyz + 8);
@@ -66,6 +90,9 @@ pub fn find_solution(level: u32, _certify: bool) -> Result<Solution, &'static st
         dur_make.as_secs_f32(),
         dur_solve.as_secs_f32(),
         dur_certify.as_secs_f32()
+    );
+    assert_eq!(seq_id, SequenceID::HamCycle);
+
     );
     assert_eq!(seq_id, SequenceID::HamCycle);
 
