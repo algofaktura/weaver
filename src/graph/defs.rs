@@ -40,6 +40,12 @@ pub type ZOrder = Vec<(Point, usize)>;
 use serde::Serialize;
 use std::error::Error;
 
+#[derive(Debug, Clone, Copy)]
+pub enum XY {
+    X,
+    Y,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "PascalCase")]
 struct Vector {

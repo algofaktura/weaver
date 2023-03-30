@@ -965,6 +965,9 @@ The solution can be plotted using pandas, numpy and plotly. I've put together an
 | 🇳  880 | ⭕️  911729280 | 🕗 1483.3105    | 📌 HamCycle |     
 | 🇳  881 | ⭕️  914837448 | 🕗 1467.383     | 📌 HamCycle |     
 | 🇳 1000 | ⭕️ 1337336000 | 🕗 2403.4136    | 📌 HamCycle | 🕗 CERTIFY: 565.8121
+| 🇳 1010 | 🕗 MAKE: 0.367315 | ⭕️ 1377817760 | 🕗 SOLVE: 2561.4006 | 📌 HamCycle | 🕗 CERTIFY: 586.4983
+| 🇳 1100 | 🕗 MAKE: 0.373897 | ⭕️ 1779509600 | 🕗 SOLVE: 3562.2673 | 📌 HamCycle | 🕗 CERTIFY: 696.28436
+
 ## Licensing:
 
 This package is licensed under the MIT license.

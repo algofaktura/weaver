@@ -146,6 +146,8 @@ pub mod modify {
 }
 
 pub mod info {
+    use ndarray::Array1;
+
     use super::{Point, SignedIdx, Vert};
 
     pub fn are_adj([a, b, c]: [i16; 3], [x, y, z]: [i16; 3]) -> bool {
@@ -203,12 +205,21 @@ pub mod info {
             .sum()
     }
 
-    /// mask = v >> 15, r = (v ^ mask) - mask;
     pub fn absumv2dc6(vert: [i16; 2]) -> i16 {
         vert.iter().fold(0, |acc, x| {
             let mask = x >> 15;
             acc + (x ^ mask) - mask
         })
+    }
+
+
+    pub fn absumv_arr(vect: &Array1<i16>) -> i16 {
+        vect.iter()
+            .map(|v| {
+                let mask = v >> 15;
+                (v ^ mask) - mask
+            })
+            .sum()
     }
 
     pub fn absumv(vert: [i16; 3]) -> Point {
@@ -224,6 +235,10 @@ pub mod info {
         (get_n_from_order(order) * 2 - 1) as i32
     }
 
+    pub fn get_max_xyz_from_n(n: u32) -> SignedIdx {
+        (n * 2 - 1) as i32
+    }
+
     pub fn get_order_from_n(n: u32) -> u32 {
         ((4.0 / 3.0) * ((n + 2) * (n + 1) * n) as f64).round() as u32
     }
@@ -234,6 +249,10 @@ pub mod info {
 
     pub fn get_color_index(z: i16) -> u32 {
         (z % 4 + 4).try_into().unwrap()
+    }
+
+    pub fn get_zlen(n: u32) -> u32 {
+        2 * n * (n + 1)
     }
 }
 
@@ -435,5 +454,31 @@ pub mod csv_out {
         });
         writer.flush()?;
         Ok(())
+    }
+}
+
+pub mod debug {
+    use chrono::{Datelike, Local, Timelike};
+    use std::fmt;
+
+    struct DateTimeString(String);
+
+    impl fmt::Display for DateTimeString {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "{}", self.0)
+        }
+    }
+
+    pub fn get_current_date_time() -> String {
+        let now = Local::now();
+        format!(
+            "📅 {:02}/{:02}/{:02}  ⌚ {:02}:{:02}:{:02}",
+            now.day(),
+            now.month(),
+            now.year() % 100,
+            now.hour(),
+            now.minute(),
+            now.second()
+        )
     }
 }
