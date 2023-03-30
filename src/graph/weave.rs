@@ -2,11 +2,12 @@ use itertools::Itertools;
 use ndarray::{arr2, array, s, Array2, Axis, Slice};
 
 use rayon::prelude::*;
+use std::iter::once;
 
 use super::{
     defs::{
-        Bobbins, Count, Loom, LoomSlice, Point, Solution, Spindle, Spool, Spun, Tour,
-        Var2, Warps, Weaver, Yarn, YarnEnds, ZAdjacency, ZOrder, XY,
+        Bobbins, Count, Loom, LoomSlice, Point, Solution, Spindle, Spool, Spun, Tour, Var2, Warps,
+        Weaver, Yarn, YarnEnds, ZAdjacency, ZOrder, XY,
     },
     utils::{
         info::{absumv2dc, absumvar, are_adj, get_color_index},
@@ -52,8 +53,8 @@ pub fn weave(n: usize, z_adj: ZAdjacency, z_order: ZOrder, min_xyz: Point, order
 }
 
 fn wrap_and_reflect_loom(n: usize, _z_adj: ZAdjacency, z_order: ZOrder) -> Loom {
-    let spool: Spool = spin_and_color_yarn(_z_adj);
-    // let spool: Spool = spin_and_color_yarn_n(n as u32); // <- better version without visited or adjacency.
+    // let spool: Spool = spin_and_color_yarn(_z_adj);
+    let spool: Spool = spin_and_color_yarn_n((n * 2 - 1) as i16, _z_adj.len()); // <- better version without visited or adjacency.
     let mut bobbins: Bobbins = Bobbins::with_capacity(n);
     let mut loom: Loom = Loom::with_capacity((n / 2) + 1);
     for (z, length) in z_order {
@@ -110,18 +111,20 @@ pub fn spin_and_color_yarn(z_adj: ZAdjacency) -> Spool {
 }
 
 /// Newer version of spin creates the path as a zigzag and then rotates it according to its index position
-/// like taking a long strip of paper and folding it 90 degrees inwards to form a square that spirals.
+/// like taking a long strip of paper and folding it 90 degrees inwards to form a square that turns inward.
 /// probably more aptly named fold zigzag than spin bit folding in is a kind of spinning abeit a bit angular, like having square wheels.
-pub fn spin_and_color_yarn_n(n: u32) -> Spool {
-    let max_xyz: i16 = (n * 2 - 1) as i16;
-    let z_len = (2 * n * (n + 1)) as usize;
+pub fn spin_and_color_yarn_n(max_xyz: i16, zlen: usize) -> Spool {
     let max_absumv = max_xyz + 1;
-    let start_vector = array![max_xyz, 1];
     let bv: Vec<_> = vec![array![0, -2], array![-2, 0]];
     let mut cycled_bv = bv.iter().cycle();
-    let mut blue: Vec<_> = Vec::with_capacity(z_len);
-    blue.push(start_vector);
-    (0..z_len - 1).for_each(|idx| blue.push(blue[idx].clone() + cycled_bv.next().unwrap()));
+    let blue: Vec<_> = once(array![max_xyz, 1])
+        .chain(
+            (0..zlen - 1).scan(array![max_xyz, 1], |state, _| {
+                *state += cycled_bv.next().unwrap();
+                Some(state.clone())
+            }),
+        )
+        .collect();
     let idxs: Vec<u32> = (2..=(blue
         .iter()
         .enumerate()
