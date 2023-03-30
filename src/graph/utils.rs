@@ -212,8 +212,7 @@ pub mod info {
         })
     }
 
-
-    pub fn absumv_arr(vect: &Array1<i16>) -> i16 {
+    pub fn absumvar(vect: &Array1<i16>) -> i16 {
         vect.iter()
             .map(|v| {
                 let mask = v >> 15;
@@ -441,7 +440,7 @@ pub mod csv_out {
     }
 
     pub fn vector_to_csv(data: Vec<[i16; 3]>, file_path: &str) -> Result<(), Box<dyn Error>> {
-        let file = std::fs::File::create(&file_path)?;
+        let file = std::fs::File::create(file_path)?;
         let mut writer = csv::Writer::from_writer(file);
         data.iter().for_each(|[x, y, z]| {
             writer

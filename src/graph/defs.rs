@@ -149,7 +149,7 @@ impl Weaver {
     /// Save solution to file_path as a csv file where each axis X, Y, Z is a separate column.
     /// Structured for easy read and plotting using python and plotly (see above).
     pub fn save_to_csv(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
-        let file = std::fs::File::create(&file_path)?;
+        let file = std::fs::File::create(file_path)?;
         let mut writer = csv::Writer::from_writer(file);
         self.data.iter().for_each(|[x, y, z]| {
             writer

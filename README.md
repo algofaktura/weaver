@@ -967,7 +967,7 @@ The solution can be plotted using pandas, numpy and plotly. I've put together an
 | 🇳 1000 | ⭕️ 1337336000 | 🕗 2403.4136    | 📌 HamCycle | 🕗 CERTIFY: 565.8121
 | 🇳 1010 | 🕗 MAKE: 0.367315 | ⭕️ 1377817760 | 🕗 SOLVE: 2561.4006 | 📌 HamCycle | 🕗 CERTIFY: 586.4983
 | 🇳 1100 | 🕗 MAKE: 0.373897 | ⭕️ 1779509600 | 🕗 SOLVE: 3562.2673 | 📌 HamCycle | 🕗 CERTIFY: 696.28436
-
+| 🇳 1200 | 🕗 MAKE: 0.521218 | ⭕️ 2309763200 | 🕗 SOLVE: 8420.2519 | 📌 HamCycle
 ## Licensing:
 
 This package is licensed under the MIT license.
