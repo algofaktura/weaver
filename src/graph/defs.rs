@@ -4,6 +4,13 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use super::utils::{check_edge::is_valid_edge, modify::orient};
 
+pub const DISP_VECTORS: [[[i16; 2]; 2]; 4] = [
+    [[-2, 0], [0, -2]],
+    [[-2, 0], [0, 2]],
+    [[2, 0], [0, 2]],
+    [[2, 0], [0, -2]],
+];
+
 pub type Adjacency = HashMap<Node, Neighbors>;
 pub type ZAdjacency = HashMap<[Point; 2], Vec<[Point; 2]>>;
 pub type Bobbins = Vec<Node>;

@@ -1,16 +1,16 @@
 use itertools::Itertools;
 use ndarray::{arr2, array, s, Array2, Axis, Slice};
-
 use rayon::prelude::*;
-use std::iter::once;
+use std::{collections::HashMap, iter::once};
 
 use super::{
     defs::{
         Bobbins, Count, Loom, LoomSlice, Point, Solution, Spindle, Spool, Spun, Tour, Var2, Warps,
-        Weaver, Yarn, YarnEnds, ZAdjacency, ZOrder, XY,
+        Weaver, Yarn, YarnEnds, ZAdjacency, ZOrder, XY, DISP_VECTORS,
     },
     utils::{
-        info::{absumv2dc, absumvar, are_adj, get_color_index},
+        info::{absumv2dc, are_adj, get_color_index},
+        modify::add_points2d,
         make_edges_eadjs::{make_eadjs, make_edges},
     },
 };
@@ -54,7 +54,7 @@ pub fn weave(n: usize, z_adj: ZAdjacency, z_order: ZOrder, min_xyz: Point, order
 
 fn wrap_and_reflect_loom(n: usize, _z_adj: ZAdjacency, z_order: ZOrder) -> Loom {
     // let spool: Spool = spin_and_color_yarn(_z_adj);
-    let spool: Spool = spin_and_color_yarn_n((n * 2 - 1) as i16, _z_adj.len()); // <- better version without visited or adjacency.
+    let spool: Spool = spin_and_color_yarn_n(n, (n * 2 - 1) as i16, _z_adj.len()); // <- better version without visited or adjacency.
     let mut bobbins: Bobbins = Bobbins::with_capacity(n);
     let mut loom: Loom = Loom::with_capacity((n / 2) + 1);
     for (z, length) in z_order {
@@ -63,15 +63,13 @@ fn wrap_and_reflect_loom(n: usize, _z_adj: ZAdjacency, z_order: ZOrder) -> Loom 
             bobbins = pin_ends(&mut loom);
         }
     }
+    // Mirror half to make whole.
     loom.par_iter_mut().for_each(|thread| {
         thread.extend(
             thread
                 .iter()
                 .rev()
-                .map(|&node| {
-                    let [x, y, z] = node;
-                    [x, y, -z]
-                })
+                .map(|&[x, y, z]| [x, y, -z])
                 .collect::<Tour>(),
         )
     });
@@ -113,53 +111,35 @@ pub fn spin_and_color_yarn(z_adj: ZAdjacency) -> Spool {
 /// Newer version of spin creates the path as a zigzag and then rotates it according to its index position
 /// like taking a long strip of paper and folding it 90 degrees inwards to form a square that turns inward.
 /// probably more aptly named fold zigzag than spin bit folding in is a kind of spinning abeit a bit angular, like having square wheels.
-pub fn spin_and_color_yarn_n(max_xyz: i16, zlen: usize) -> Spool {
-    let max_absumv = max_xyz + 1;
+pub fn spin_and_color_yarn_n(n: usize, max_xyz: i16, zlen: usize) -> Spool {
     let bv: Vec<_> = vec![array![0, -2], array![-2, 0]];
     let mut cycled_bv = bv.iter().cycle();
-    let blue: Vec<_> = once(array![max_xyz, 1])
-        .chain(
-            (0..zlen - 1).scan(array![max_xyz, 1], |state, _| {
+    let mut blue: Array2<i16> = Array2::from_shape_vec(
+        (zlen, 2),
+        once(array![max_xyz, 1])
+            .chain((0..zlen - 1).scan(array![max_xyz, 1], |state, _| {
                 *state += cycled_bv.next().unwrap();
                 Some(state.clone())
-            }),
-        )
-        .collect();
-    let idxs: Vec<u32> = (2..=(blue
-        .iter()
-        .enumerate()
-        .find_map(|(i, vec)| {
-            if absumvar(vec) > max_absumv {
-                Some(i)
-            } else {
-                None
-            }
-        })
-        .unwrap() as u32
-        - 1))
-        .step_by(2)
-        .collect_vec()
-        .iter()
-        .rev()
-        .flat_map(|cut| [cut, cut])
-        .into_iter()
-        .scan(0, |state, n| {
-            *state += *n;
-            Some(*state - 1)
-        })
-        .collect();
-    let mut blue: Array2<i16> = Array2::from_shape_vec(
-        (blue.len(), 2),
-        blue.iter().flat_map(|arr| arr.iter().cloned()).collect(),
+            }))
+            .flatten()
+            .collect(),
     )
     .unwrap();
-    let mut cycler = [XY::X, XY::Y].iter().cycle();
-    for idx in idxs {
+    let mut xyxy = [XY::X, XY::Y].iter().cycle();
+    for idx in (-(n as i64 * 2)..=-2)
+        .step_by(2)
+        .flat_map(|cut| [-cut as usize, -cut as usize])
+        .scan(0, |state, n| {
+            *state += n;
+            Some(*state - 1)
+        })
+        .collect::<Vec<usize>>()
+    {
         let rotation_point = blue.row(idx as usize).to_owned();
         let mut slice_points = blue.slice_mut(s![idx as usize.., ..]);
         let mut points = slice_points.view_mut();
         points.assign(
-            &((points.to_owned() - &rotation_point).dot(&match *cycler.next().unwrap() {
+            &((points.to_owned() - &rotation_point).dot(&match *xyxy.next().unwrap() {
                 XY::X => arr2(&[[1, 0], [0, -1]]),
                 XY::Y => arr2(&[[-1, 0], [0, 1]]),
             }) + &rotation_point),
@@ -167,6 +147,46 @@ pub fn spin_and_color_yarn_n(max_xyz: i16, zlen: usize) -> Spool {
     }
     let red: Yarn = blue.dot(&arr2(&[[-1, 0], [0, -1]])) + arr2(&[[0, 2]]);
     Spool::from([(3, blue), (1, red)])
+}
+
+pub fn spin_and_color_yarn_s(z_adj: ZAdjacency) -> Spool {
+    let max_xyz = z_adj.keys().max().unwrap()[0].abs();
+    let mut spindle = spinner(z_adj.len(), max_xyz);
+    let blue: Yarn = Yarn::from(spindle.drain(..).collect::<Vec<_>>());
+    let red: Yarn = blue.dot(&arr2(&[[-1, 0], [0, -1]])) + arr2(&[[0, 2]]);
+    Spool::from([(3, blue), (1, red)])
+}
+
+/// older new spin function doesn't use adjacency. unfortunately still slower...
+/// next refactoring involves using matrix operations to manipulate an already formed sequence, if it's any faster. (see above)
+pub fn spinner(order_z: usize, max_xyz: i16) -> Vec<[i16; 2]> {
+    let max_absumv: i16 = max_xyz + 1;
+    let mut visited: HashMap<[i16; 2], bool> = HashMap::with_capacity(order_z);
+    let mut disp_cycler = DISP_VECTORS.iter().cycle();
+    let yx: [usize; 2] = [1, 0];
+    let mut yxyx = yx.iter().cycle();
+    let mut spindle: Vec<[i16; 2]> = vec![[0, 0]; order_z];
+    let start = [max_xyz, 1];
+    spindle[0] = start;
+    visited.insert(start, true);
+    let mut inside = false;
+    let mut curr_disp = disp_cycler.next().unwrap();
+    (0..order_z - 1).for_each(|i|{
+        let [x, y] = spindle[i];
+        let yorx = *yxyx.next().unwrap();
+        let mut new_vect = add_points2d([x, y], curr_disp[yorx]);
+        let is_visited = visited.get(&new_vect).is_some();
+        if !inside && is_visited {
+            inside = true;
+        }
+        if is_visited || !inside && absumv2dc(new_vect) > max_absumv {
+            curr_disp = disp_cycler.next().unwrap();
+            new_vect = add_points2d([x, y], curr_disp[yorx]);
+        }
+        spindle[i + 1] = new_vect;
+        visited.insert(new_vect, true);
+    });
+    spindle
 }
 
 fn get_warps(z: i16, length: Count, bobbins: &Tour, spool: &Spool) -> Warps {
@@ -178,8 +198,8 @@ fn get_warps(z: i16, length: Count, bobbins: &Tour, spool: &Spool) -> Warps {
         .map(|row| [row[0], row[1], z])
         .collect::<Vec<_>>()
     {
-        node_yarn if bobbins.is_empty() => vec![node_yarn],
-        node_yarn => cut_yarn(node_yarn, bobbins),
+        _yarn if bobbins.is_empty() => vec![_yarn],
+        _yarn => cut_yarn(_yarn, bobbins),
     }
 }
 

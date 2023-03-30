@@ -15,13 +15,15 @@
 extern crate chrono;
 extern crate rayon;
 
-use std::{env, time::Instant};
-
 pub mod graph;
 
-use graph::{defs::*, utils::certify::SequenceID, utils::make::make_z_graph, weave};
-
-use crate::graph::utils::certify::is_hamiltonian_circuit;
+use graph::{
+    defs::*,
+    utils::certify::{is_hamiltonian_circuit, SequenceID},
+    utils::make::make_z_graph,
+    weave,
+};
+use std::{env, time::Instant};
 
 pub fn main() -> Result<(), &'static str> {
     let args: Vec<String> = env::args().collect();

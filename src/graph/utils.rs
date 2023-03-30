@@ -143,6 +143,10 @@ pub mod modify {
             .map(|point| [point[0], point[1]])
             .collect()
     }
+
+    pub fn add_points2d([x, y]: [i16; 2], [a, b]: [i16; 2]) -> [i16; 2] {
+        [x + a, y + b]
+    }
 }
 
 pub mod info {
