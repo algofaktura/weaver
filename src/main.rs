@@ -13,7 +13,30 @@
 /// continues to the next orders up to the 100th which is an order with 1,373,600 vertices,
 /// makes graph, solves it
 /// 1 (start with order 8 end at order 1,373,600) 100 in steps of two: [1, 3, 5, 7...]
-/// 1 (start with order 8 end at order 1,373,600) 100 in steps of two: [1, 3, 5, 7...]
+/// GOAL IS 8011618152. 8 BILLION FOR EACH PERSON ON THE EARTH. N = 1817.
+/// 
+/// 
+///           
+///                         *-------*  
+///                        /|      /|  
+///                       *-------*-|-*
+///                       | |/|   | |/|
+///                 *-----|-*-----|-*--------*
+///                /|     |/| |   |/| |     /|  
+///               *-------*-------*---*----*-|   
+///               | |    /| |/   /| |/     | |  
+///               | *---*-------*-|-*------|-*  
+///               |/    | |/|   | |/|      |/   
+///               *-----|-*-----|-*--------*                  
+///                     |/| |   |/| |  
+///                     *-------*-|-*  
+///                       |/      |/   
+///                       *-------*          
+/// 
+/// 
+/// 
+/// 
+/// 
 /////////////////////////////////////////////////////////////////////////////
 extern crate chrono;
 extern crate rayon;
@@ -23,12 +46,14 @@ pub mod graph;
 use graph::{
     defs::*,
     utils::certify::{is_hamiltonian_circuit, SequenceID},
-    utils::make::make_z_graph,
+    utils::info::get_order_from_n_u64,
+    utils::make::make_xs_graph,
     weave,
 };
 use std::{env, time::Instant};
 
 pub fn main() -> Result<(), &'static str> {
+    println!("{}", get_order_from_n_u64(1817));
     let args: Vec<String> = env::args().collect();
     let n_start = args
         .get(1)
@@ -47,20 +72,18 @@ pub fn main() -> Result<(), &'static str> {
     Ok(())
 }
 
-pub fn find_solution(level: u32, _certify: bool) -> Result<Solution, &'static str> {
+pub fn find_solution(level: usize, _certify: bool) -> Result<Solution, &'static str> {
     let mut start: Instant = Instant::now();
-    let (n, order, z_adj, z_order, min_xyz) = make_z_graph(level);
+    let (n, order, z_order, min_xyz) = make_xs_graph(level);
     let dur_make = Instant::now() - start;
     start = Instant::now();
-    let solution = weave::weave(n as usize, z_adj, z_order, min_xyz, order);
+    let solution = weave::weave(n as usize, z_order, min_xyz, order);
     let dur_solve = Instant::now() - start;
-
     println!(
-        "| 🇳 {n:>4} | 🕗 MAKE: {} | ⭕️ {order:>10} | 🕗 SOLVE: {} | 📌 HamCycle",
+        "| 🇳 {n:>4} | 🕗 MAKE: {} | ⭕️ {order:>10} | 🕗 SOLVE: {} |",
         dur_make.as_secs_f32(),
         dur_solve.as_secs_f32(),
     );
-
     start = Instant::now();
     let seq_id = is_hamiltonian_circuit(&solution, order as usize, min_xyz + 8);
     let dur_certify = Instant::now() - start;
@@ -71,6 +94,5 @@ pub fn find_solution(level: u32, _certify: bool) -> Result<Solution, &'static st
         dur_certify.as_secs_f32()
     );
     assert_eq!(seq_id, SequenceID::HamCycle);
-
     Ok(solution)
 }
